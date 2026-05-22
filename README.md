@@ -134,7 +134,7 @@ Every channel gets:
 **Python (MCP server)**
 - [faster-whisper](https://github.com/SYSTRAN/faster-whisper) — word-level transcription
 - [Pillow](https://python-pillow.org) — compositor v1 fallback
-- [CairoSVG](https://cairosvg.org) — SVG rendering
+- [CairoSVG](https://cairosvg.org) — SVG to PNG rasterization
 - [ffmpeg-python](https://github.com/kkroening/ffmpeg-python) — audio analysis
 - [pydantic v2](https://docs.pydantic.dev) — schema validation
 
