@@ -1,0 +1,63 @@
+{
+  "last_updated": "2026-05-21T19:52:24.428925",
+  "total_channels": 3,
+  "total_videos": 3,
+  "sheets": {
+    "hooks": {
+      "columns": [
+        "hook_type",
+        "channel_id",
+        "video_id",
+        "duration_sec",
+        "engagement_rate",
+        "click_quality_score",
+        "notes"
+      ],
+      "rows": []
+    },
+    "thumbnails": {
+      "columns": [
+        "thumbnail_type",
+        "channel_id",
+        "video_id",
+        "estimated_ctr",
+        "click_quality_score",
+        "emotion"
+      ],
+      "rows": []
+    },
+    "pacing": {
+      "columns": [
+        "rhythm_type",
+        "avg_cut_interval",
+        "pattern_interrupts",
+        "channel_id",
+        "video_id",
+        "engagement_rate"
+      ],
+      "rows": []
+    },
+    "patterns": {
+      "columns": [
+        "pattern_type",
+        "technique",
+        "channel_id",
+        "video_id",
+        "effect",
+        "confidence"
+      ],
+      "rows": []
+    },
+    "platform_models": {
+      "columns": [
+        "platform",
+        "format",
+        "best_hook_types",
+        "optimal_duration",
+        "rhythm_type",
+        "reward_type"
+      ],
+      "rows": []
+    }
+  }
+}

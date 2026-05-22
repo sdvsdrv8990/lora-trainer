@@ -1,0 +1,52 @@
+{
+  "source": "tactiq",
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 4.2,
+      "text": "Most businesses are bleeding money and they don't even know it."
+    },
+    {
+      "start": 4.2,
+      "end": 8.7,
+      "text": "And the reason is always the same one mistake."
+    },
+    {
+      "start": 8.7,
+      "end": 15.1,
+      "text": "I've seen this kill companies doing 10 million a year."
+    },
+    {
+      "start": 15.1,
+      "end": 22.4,
+      "text": "Here's what's happening. Your pricing is wrong. Not a little wrong. Catastrophically wrong."
+    },
+    {
+      "start": 22.4,
+      "end": 31.0,
+      "text": "Every dollar you leave on the table compounds. Year one you lose 100k. Year three that's 400k gone."
+    },
+    {
+      "start": 31.0,
+      "end": 38.5,
+      "text": "But here's the twist — raising prices usually increases sales. I know that sounds backwards."
+    },
+    {
+      "start": 38.5,
+      "end": 47.2,
+      "text": "We tested this across 32 businesses. Average revenue increase: 23 percent in 90 days."
+    },
+    {
+      "start": 47.2,
+      "end": 55.0,
+      "text": "The fix is three steps and takes one afternoon. Step one: audit your bottom 20 percent of clients."
+    },
+    {
+      "start": 55.0,
+      "end": 58.0,
+      "text": "Do this and your business looks completely different by Q4."
+    }
+  ],
+  "video_id": "test_video_001",
+  "imported_at": "2026-05-21T15:59:34.715871"
+}

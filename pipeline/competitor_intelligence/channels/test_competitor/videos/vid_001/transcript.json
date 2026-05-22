@@ -1,0 +1,47 @@
+{
+  "source": "tactiq",
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 4.2,
+      "text": "Most businesses are losing money right now without knowing it."
+    },
+    {
+      "start": 4.2,
+      "end": 8.7,
+      "text": "And the reason is always the same one mistake."
+    },
+    {
+      "start": 8.7,
+      "end": 15.0,
+      "text": "I've seen this kill seven-figure companies in under a year."
+    },
+    {
+      "start": 15.0,
+      "end": 22.0,
+      "text": "Here's what it is and how you fix it in the next 48 hours."
+    },
+    {
+      "start": 22.0,
+      "end": 31.0,
+      "text": "Most founders focus on revenue. That's the wrong metric. The only number that matters is contribution margin."
+    },
+    {
+      "start": 31.0,
+      "end": 42.0,
+      "text": "When margin drops below 40 percent you are funding your own collapse. Every new customer accelerates the problem."
+    },
+    {
+      "start": 42.0,
+      "end": 51.0,
+      "text": "Fix it by cutting your three lowest-margin products immediately. Not later. This week."
+    },
+    {
+      "start": 51.0,
+      "end": 58.0,
+      "text": "The businesses that survive the next five years will be the ones who know their numbers cold."
+    }
+  ],
+  "video_id": "vid_001",
+  "imported_at": "2026-05-21T15:52:00.463056"
+}

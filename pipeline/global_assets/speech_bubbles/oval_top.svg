@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 150" width="300" height="150">
+  <ellipse cx="150" cy="55" rx="130" ry="45" fill="white" stroke="#333" stroke-width="3"/>
+  <!-- Tail pointing downward -->
+  <polygon points="130,95 150,135 170,95" fill="white" stroke="#333" stroke-width="3"/>
+</svg>

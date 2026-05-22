@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 160" width="80" height="160">
+  <ellipse cx="40" cy="30" rx="18" ry="18" fill="#PLACEHOLDER_COLOR"/>
+  <rect x="20" y="50" width="40" height="55" rx="8" fill="#PLACEHOLDER_COLOR"/>
+  <rect x="4" y="52" width="14" height="36" rx="7" fill="#PLACEHOLDER_COLOR"/>
+  <rect x="62" y="52" width="14" height="36" rx="7" fill="#PLACEHOLDER_COLOR"/>
+  <rect x="22" y="102" width="14" height="48" rx="7" fill="#PLACEHOLDER_COLOR"/>
+  <rect x="44" y="102" width="14" height="48" rx="7" fill="#PLACEHOLDER_COLOR"/>
+  <!-- Happy eyes -->
+  <path d="M30 27 Q33 23 36 27" stroke="#333" stroke-width="2" fill="none"/>
+  <path d="M44 27 Q47 23 50 27" stroke="#333" stroke-width="2" fill="none"/>
+  <!-- Smile -->
+  <path d="M33 36 Q40 42 47 36" stroke="#333" stroke-width="2" fill="none"/>
+</svg>

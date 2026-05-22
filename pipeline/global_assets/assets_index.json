@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "categories": {
+    "characters/crowd": ["figure_base", "figure_happy", "figure_sad", "figure_angry", "figure_surprised", "figure_thinking"],
+    "characters/main": ["protagonist"],
+    "speech_bubbles": ["oval_right", "oval_left", "oval_top", "thought"]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "Custom HuggingFace Model",
+  "model_id": "author/model-name",
+  "engine": "diffusers",
+  "device": "rocm",
+  "fallback_device": "cpu",
+  "dtype": "float16",
+  "lora": {"enabled": false, "path": null},
+  "default_params": {
+    "steps": 25,
+    "guidance_scale": 7.5,
+    "width": 512,
+    "height": 512
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "title": "This mistake costs businesses millions",
+  "platform": "youtube",
+  "format": "longform",
+  "duration_sec": 58,
+  "raw_metrics": {
+    "views": 4200000,
+    "likes": 183000,
+    "comments": 8200,
+    "recorded_at": "2026-05-21"
+  },
+  "thumbnail": {
+    "type": "face_closeup",
+    "contrast": "high",
+    "emotion": "concern",
+    "text_overlay": true
+  },
+  "user_notes": "Fast cuts, every 2 seconds. Strong fear hook in first 5 seconds.",
+  "video_id": "vid_001",
+  "channel_id": "test_competitor",
+  "last_updated": "2026-05-21T15:52:29.954324",
+  "analyzed_by_claude": true,
+  "computed_metrics": {
+    "engagement_rate": 0.0455,
+    "estimated_reach": 5460000,
+    "click_quality_score": 0.0,
+    "discussion_rate": 0.002,
+    "estimated_ctr": 0.0065,
+    "attention_compression": 0.0
+  },
+  "structure": {
+    "hook_type": "fear_loss",
+    "modules": [
+      {
+        "type": "HOOK",
+        "start": 0,
+        "end": 15,
+        "technique": "fear_loss + stat_shock"
+      },
+      {
+        "type": "SETUP",
+        "start": 15,
+        "end": 22,
+        "technique": "promise delivery"
+      },
+      {
+        "type": "ESCALATION",
+        "start": 22,
+        "end": 42,
+        "technique": "conflict + consequence"
+      },
+      {
+        "type": "PAYOFF",
+        "start": 42,
+        "end": 58,
+        "technique": "concrete action + closing identity"
+      }
+    ]
+  }
+}

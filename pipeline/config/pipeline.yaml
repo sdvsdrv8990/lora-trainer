@@ -1,0 +1,16 @@
+server:
+  host: "0.0.0.0"
+  port: 8765
+  path: "/mcp"
+  name: "vidpipe-pipeline"
+
+projects:
+  base_dir: "~/projects/videos"
+
+subdirs:
+  - audio
+  - images
+  - prompts
+  - md
+  - renders
+  - final

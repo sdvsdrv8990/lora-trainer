@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 160" width="80" height="160">
+  <!-- Main character — slightly different build, star emblem -->
+  <ellipse cx="40" cy="30" rx="20" ry="20" fill="#FF6B35"/>
+  <rect x="18" y="52" width="44" height="56" rx="10" fill="#FF6B35"/>
+  <rect x="2" y="54" width="14" height="38" rx="7" fill="#FF6B35"/>
+  <rect x="64" y="54" width="14" height="38" rx="7" fill="#FF6B35"/>
+  <rect x="20" y="105" width="16" height="46" rx="8" fill="#FF6B35"/>
+  <rect x="44" y="105" width="16" height="46" rx="8" fill="#FF6B35"/>
+  <!-- Eyes -->
+  <circle cx="33" cy="27" r="4" fill="white"/>
+  <circle cx="47" cy="27" r="4" fill="white"/>
+  <circle cx="34" cy="28" r="2" fill="#1a1a1a"/>
+  <circle cx="48" cy="28" r="2" fill="#1a1a1a"/>
+  <!-- Star emblem on chest -->
+  <polygon points="40,60 42,67 49,67 44,71 46,78 40,74 34,78 36,71 31,67 38,67" fill="white"/>
+</svg>

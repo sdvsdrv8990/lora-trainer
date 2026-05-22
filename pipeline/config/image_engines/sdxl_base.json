@@ -1,0 +1,15 @@
+{
+  "name": "SDXL Base",
+  "model_id": "stabilityai/stable-diffusion-xl-base-1.0",
+  "engine": "diffusers",
+  "device": "rocm",
+  "fallback_device": "cpu",
+  "dtype": "float16",
+  "lora": {"enabled": false, "path": null},
+  "default_params": {
+    "steps": 30,
+    "guidance_scale": 7.5,
+    "width": 1024,
+    "height": 1024
+  }
+}

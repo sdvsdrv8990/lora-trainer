@@ -1,0 +1,35 @@
+# TTS engine configuration
+tts:
+  engine: "espeak"          # current working engine
+  target_engine: "kokoro"   # planned — see KOKORO_INTEGRATION.md
+  model: "espeak-ng"
+  voice: "ru"
+  speed_wpm: 150
+
+# Image generation engine configuration
+# profile: id from config/image_engines/*.json (overrides engine/model)
+# engine: stub   — placeholder, writes minimal PNG files (default until real adapter is ready)
+# engine: diffusers — local SD/SDXL via HuggingFace diffusers (see src/images/adapters/diffusers.py)
+image:
+  profile: "stub"
+  profiles_dir: "config/image_engines"
+  engine: "stub"
+  provider: "local"
+  model: "stabilityai/stable-diffusion-xl-base-1.0"
+
+# SVG rendering configuration
+svg:
+  engine: "cairosvg"
+  dpi: 96
+
+# PNG-to-SVG tracing configuration
+tracing:
+  engine: "vtracer"
+  color_mode: "color"
+  filter_speckle: 4
+
+# Asset overuse detection thresholds
+asset_overuse:
+  global_warn_threshold: 10
+  project_warn_threshold: 5
+  exempt_roles: ["BASE", "LORA"]

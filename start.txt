@@ -1,0 +1,5 @@
+  Terminal 1 — server:
+  cd pipeline && source venv/bin/activate && python main.py start
+
+  Terminal 2 — tunnel:
+  cloudflared tunnel --url http://localhost:8765

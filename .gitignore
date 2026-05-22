@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+
+# Node.js
+node_modules/
+remotion/node_modules/
+pipeline/remotion/node_modules/
+*.tsbuildinfo
+
+# AI models — too large for git
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.gguf
+*.onnx
+
+# Whisper / HuggingFace model cache
+models/
+.cache/
+
+# Generated media — not source files
+audio/*.mp3
+audio/*.wav
+images/*.png
+images/*.jpg
+renders/*.mp4
+renders/scenes/*.mp4
+renders/previews/*.png
+*.mp4
+*.mov
+*.avi
+*.wav
+
+# Sensitive config — never commit
+config/api_keys.yaml
+config/api_keys.yml
+.env
+.env.*
+*.secret
+secrets.yaml
+
+# Project workspace data — user-specific, not source
+projects/videos/
+pipeline/projects/
+global_registry.json
+competitor_intelligence/channels/*/videos/
+
+# Large binary assets — manage separately
+global_assets/sounds/
+global_assets/characters/**/*.mp3
+
+# Audit/planning temp files
+_AUDIT_TEMP.md
+.planning/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log

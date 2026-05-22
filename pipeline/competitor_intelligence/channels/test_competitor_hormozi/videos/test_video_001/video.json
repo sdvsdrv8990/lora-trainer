@@ -1,0 +1,78 @@
+{
+  "title": "This mistake costs businesses millions",
+  "platform": "youtube",
+  "format": "longform",
+  "duration_sec": 58,
+  "raw_metrics": {
+    "views": 4200000,
+    "likes": 183000,
+    "comments": 8200,
+    "recorded_at": "2026-05-21"
+  },
+  "thumbnail": {
+    "type": "face_closeup",
+    "contrast": "high",
+    "emotion": "concern",
+    "text_overlay": true
+  },
+  "user_notes": "Opens with stat shock, no intro, direct conflict",
+  "video_id": "test_video_001",
+  "channel_id": "test_competitor_hormozi",
+  "last_updated": "2026-05-21T16:00:02.466995",
+  "analyzed_by_claude": true,
+  "computed_metrics": {
+    "engagement_rate": 0.0455,
+    "estimated_reach": 5460000,
+    "click_quality_score": 0.0,
+    "discussion_rate": 0.002,
+    "estimated_ctr": 0.0065,
+    "attention_compression": 0.0
+  },
+  "structure": {
+    "hook_type": "fear_loss",
+    "modules": [
+      {
+        "type": "HOOK",
+        "start": 0,
+        "end": 8.7,
+        "technique": "fear_loss + stat_shock",
+        "note": "opens with bleeding money, no intro"
+      },
+      {
+        "type": "SETUP",
+        "start": 8.7,
+        "end": 22.4,
+        "technique": "concrete example",
+        "note": "10M company example, pricing framing"
+      },
+      {
+        "type": "ESCALATION",
+        "start": 22.4,
+        "end": 31.0,
+        "technique": "compound loss",
+        "note": "year 1 → year 3 compounding loss"
+      },
+      {
+        "type": "DISRUPTION",
+        "start": 31.0,
+        "end": 38.5,
+        "technique": "unexpected_reversal",
+        "note": "raising prices = more sales twist"
+      },
+      {
+        "type": "PAYOFF",
+        "start": 38.5,
+        "end": 55.0,
+        "technique": "social_proof + actionable",
+        "note": "32 businesses tested, 3-step fix"
+      },
+      {
+        "type": "AFTERTASTE",
+        "start": 55.0,
+        "end": 58.0,
+        "technique": "future_vision",
+        "note": "Q4 transformation promise"
+      }
+    ]
+  }
+}
