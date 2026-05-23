@@ -1868,6 +1868,58 @@ def pipeline_import_transcript(
 
 
 @mcp.tool()
+def pipeline_get_transcript(
+    channel: ChannelArg,
+    scenario: ScenarioArg,
+    channel_id: Annotated[str, Field(description="Competitor channel identifier.")],
+    video_id: Annotated[str, Field(description="Video identifier.")],
+) -> dict:
+    """Return the stored transcript for a competitor video (imported via pipeline_import_transcript)."""
+    try:
+        data = _competitor.get_transcript(channel_id, video_id)
+        segments = data.get("segments", [])
+        return {
+            "ok": True,
+            "data": data,
+            "instructions": (
+                f"Transcript loaded: {len(segments)} segments. "
+                f"Use pipeline_get_competitor_index to see indexed hook/pacing data."
+            ),
+        }
+    except FileNotFoundError as e:
+        return {"ok": False, "error": str(e)}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@mcp.tool()
+def pipeline_add_competitor_index_row(
+    channel: ChannelArg,
+    scenario: ScenarioArg,
+    sheet: Annotated[str, Field(description="Target sheet: hooks, thumbnails, pacing, patterns, platform_models.")],
+    row_json: Annotated[str, Field(description="JSON object with row fields matching the sheet schema.")],
+) -> dict:
+    """Add a row to the global competitor intelligence index (hooks, thumbnails, pacing, patterns)."""
+    try:
+        row_data = json.loads(row_json)
+        result = _competitor.add_competitor_index_row(sheet, row_data)
+        return {
+            "ok": True,
+            "data": result,
+            "instructions": (
+                f"Row added to '{sheet}'. Total rows: {result['row_count']}. "
+                f"Use pipeline_get_competitor_index(sheet='{sheet}') to review."
+            ),
+        }
+    except json.JSONDecodeError as e:
+        return {"ok": False, "error": f"Invalid JSON: {e}"}
+    except KeyError as e:
+        return {"ok": False, "error": str(e)}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@mcp.tool()
 def pipeline_get_competitor_index(
     channel: ChannelArg,
     scenario: ScenarioArg,
@@ -2221,8 +2273,9 @@ def pipeline_preview_scene_event(
     scene_id: Annotated[int, Field(description="Scene ID to preview.")],
     time: Annotated[float, Field(description="Time in seconds from scene start to preview.")],
 ) -> dict:
-    """Render a single PNG frame at the given time offset for spot-checking layout without full render."""
+    """Extract a PNG frame at the given time offset from the rendered scene MP4 via FFmpeg."""
     try:
+        from src.remotion.renderer import render_scene_preview
         ws = _workspace(channel, scenario)
         if not ws.exists():
             return {"ok": False, "error": f"Workspace not found: {channel}/{scenario}."}
@@ -2230,17 +2283,19 @@ def pipeline_preview_scene_event(
         if raw.get("_schema_version") != "v2":
             return {"ok": False, "error": "pipeline_preview_scene_event requires a v2 layout."}
         preview_dir = ws / "renders" / "previews"
-        preview_dir.mkdir(parents=True, exist_ok=True)
         preview_path = preview_dir / f"scene_{scene_id:03d}_t{time:.1f}.png"
+        render_scene_preview({"scene_id": scene_id}, time, preview_path)
         return {
             "ok": True,
             "data": {
                 "preview_path": str(preview_path.relative_to(ws)),
                 "time": time,
-                "note": "Full renderStill not yet available. Run pipeline_render_scene for MP4 preview.",
+                "exists": preview_path.exists(),
             },
-            "instructions": "",
+            "instructions": f"Preview PNG written: renders/previews/scene_{scene_id:03d}_t{time:.1f}.png",
         }
+    except FileNotFoundError as e:
+        return {"ok": False, "error": str(e)}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
@@ -2304,7 +2359,7 @@ def pipeline_export_davinci(
             return {"ok": False, "error": f"Unsupported format '{format}'. Only 'fcpxml' is implemented."}
         project_name = f"{channel}_{scenario}"
         out_path = ws / "renders" / f"{project_name}_davinci.fcpxml"
-        davinci_exporter.export_fcpxml(scenes, out_path, project_name=project_name)
+        davinci_exporter.export_fcpxml(scenes, out_path, project_name=project_name, workspace_path=ws)
         total_dur = sum(float(s.get("duration", 0)) for s in scenes)
         return {
             "ok": True,

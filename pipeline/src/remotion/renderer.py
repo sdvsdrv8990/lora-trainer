@@ -33,11 +33,27 @@ def render_scene(scene_json: dict, output_path: Path) -> Path:
 
 
 def render_scene_preview(scene_json: dict, time: float, output_path: Path) -> Path:
-    """Render a single PNG frame at the given time offset (seconds)."""
-    from remotion_renderer import renderStill  # type: ignore  # noqa: F401 — optional fast path
-    raise NotImplementedError(
-        "Preview via Remotion requires renderStill. Use render_scene for full renders."
+    """Extract a PNG frame at the given time offset from a rendered scene MP4 via FFmpeg."""
+    mp4_path = output_path.parent.parent / "scenes" / f"scene_{scene_json['scene_id']:03d}.mp4"
+    if not mp4_path.exists():
+        raise FileNotFoundError(f"Scene MP4 not found: {mp4_path}. Run pipeline_render_scene first.")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    proc = subprocess.run(
+        [
+            "ffmpeg", "-y",
+            "-ss", str(time),
+            "-i", str(mp4_path),
+            "-frames:v", "1",
+            "-q:v", "2",
+            str(output_path),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
     )
+    if proc.returncode != 0:
+        raise RuntimeError(f"FFmpeg frame extraction failed: {proc.stderr}")
+    return output_path
 
 
 def get_render_script_path() -> Path:

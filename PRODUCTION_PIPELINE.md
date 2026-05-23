@@ -591,7 +591,7 @@ The CLI app runs a local MCP server that Claude.ai web can connect to.
 
 **Every tool response includes a top-level `instructions` field** with guidance for Claude on what to do next. Claude reads this field and decides the next call. The app never decides for Claude.
 
-**MCP tools the CLI app exposes (93 total):**
+**MCP tools the CLI app exposes (95 total):**
 
 | Tool | Step | Description |
 |---|---|---|
@@ -673,6 +673,8 @@ The CLI app runs a local MCP server that Claude.ai web can connect to.
 | `pipeline_get_competitor_video` | CI | Return a competitor video record |
 | `pipeline_list_competitor_videos` | CI | List all videos for a competitor channel |
 | `pipeline_import_transcript` | CI | Store a transcript for a competitor video |
+| `pipeline_get_transcript` | CI | Return stored transcript for a competitor video by video_id |
+| `pipeline_add_competitor_index_row` | CI | Add a row to a competitor intelligence index sheet (hooks/thumbnails/pacing/patterns) |
 | `pipeline_get_competitor_index` | CI | Return the global competitor index (hooks/thumbnails/pacing/patterns) |
 | `pipeline_query_competitor_data` | CI | Filter the global competitor index by field value |
 | `pipeline_save_channel_config` | CH | Save channel_config.json (channel DNA) |

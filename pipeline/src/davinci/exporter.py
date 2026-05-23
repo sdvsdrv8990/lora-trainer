@@ -3,12 +3,21 @@ from xml.dom import minidom
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 
-def export_fcpxml(timeline_scenes: list[dict], output_path: Path, project_name: str = "Video") -> Path:
+def export_fcpxml(
+    timeline_scenes: list[dict],
+    output_path: Path,
+    project_name: str = "Video",
+    workspace_path: Path | None = None,
+) -> Path:
     """
     Generate an FCPXML 1.10 file pointing to Remotion-rendered scene mp4s.
 
     timeline_scenes: list of dicts from pipeline_get_timeline, each with:
         scene_id, audio_file, start, end, duration, chapter (optional)
+
+    workspace_path: absolute path to the workspace root; used to build
+        file:// URIs for scene mp4s. If None, falls back to relative paths
+        (DaVinci may not resolve them correctly on all platforms).
 
     Output file can be imported in DaVinci Resolve 18+ via File → Import → Timeline.
     """
@@ -48,14 +57,17 @@ def export_fcpxml(timeline_scenes: list[dict], output_path: Path, project_name: 
         chapter = scene.get("chapter", f"Scene {sid}")
 
         asset_id = f"r_asset_{sid:03d}"
-        mp4_rel = f"renders/scenes/scene_{sid:03d}.mp4"
+        if workspace_path is not None:
+            src_uri = f"file://{workspace_path}/renders/scenes/scene_{sid:03d}.mp4"
+        else:
+            src_uri = f"file://renders/scenes/scene_{sid:03d}.mp4"
 
         SubElement(
             resources,
             "asset",
             id=asset_id,
             name=f"scene_{sid:03d}",
-            src=f"file://{mp4_rel}",
+            src=src_uri,
             format=fmt_id,
             duration=f"{dur:.3f}s",
             hasVideo="1",

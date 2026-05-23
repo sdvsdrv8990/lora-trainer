@@ -539,6 +539,23 @@ _TEMPLATES: dict[str, str] = {
         "  pipeline_add_registry_row in _global_index hooks/pacing/patterns sheets"
     ),
 
+    "pipeline_get_transcript": (
+        "Transcript loaded. Analyse it for:\n"
+        "  Hook (first 10-15s): opening technique\n"
+        "  Module transitions: topic/energy shifts\n"
+        "  Reset points: attention refresh moments\n"
+        "  Payoff: where the promise is delivered\n"
+        "Save findings to global index:\n"
+        "  pipeline_add_competitor_index_row(sheet='hooks', row_json='{...}')\n"
+        "  pipeline_add_competitor_index_row(sheet='pacing', row_json='{...}')"
+    ),
+
+    "pipeline_add_competitor_index_row": (
+        "Row added to '{sheet}' (total: {row_count}).\n"
+        "Continue building the index — add rows for hooks, pacing, thumbnails, patterns.\n"
+        "When enough rows exist, run pipeline_get_insights to surface validated patterns."
+    ),
+
     "pipeline_get_competitor_index": (
         "Global competitor index: {channel_count} channels, {video_count} videos\n"
         "Sheets: hooks, thumbnails, pacing, patterns, platform_models\n"

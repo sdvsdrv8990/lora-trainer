@@ -264,6 +264,14 @@ def import_transcript(channel_id: str, video_id: str, transcript_data: dict) -> 
     }
 
 
+def get_transcript(channel_id: str, video_id: str) -> dict:
+    v_dir = _video_dir(channel_id, video_id)
+    path = v_dir / "transcript.json"
+    if not path.exists():
+        raise FileNotFoundError(f"No transcript found for {channel_id}/{video_id}. Import one first.")
+    return _read_json(path)
+
+
 # ── Global index queries ───────────────────────────────────────────────────────
 
 def get_competitor_index(sheet: str = "") -> dict:
