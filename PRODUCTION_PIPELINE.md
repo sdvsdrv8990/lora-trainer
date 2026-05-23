@@ -8,6 +8,8 @@ It describes how the components connect, what each step does, what triggers the 
 
 **Related documents:**
 - `docs/pipeline/ARCHITECTURE.md` — layer-by-layer implementation structure, GitHub dependencies, module map
+- `REMOTION_INTEGRATION.md` — Remotion setup, scene schema v2 (events-based), component guide
+- `DAVINCI_WORKFLOW.md` — how to open FCPXML in DaVinci, what to do after import
 
 ---
 
@@ -28,19 +30,80 @@ Load skills in this order before writing any pipeline app code:
 
 ## System Components
 
+### v1 path (Pillow compositor — slideshow/static frames)
+
 ```
 Claude.ai Web (browser)
-    │
-    │  MCP tools / commands
+    │  MCP tools
     ▼
-CLI App (console, this project)
-    │
+CLI App (console)
     ├── Project Manager     ← creates/manages projects and channels
-    ├── Prompt Writer       ← generates image prompts as MD files
-    ├── Voiceover Processor ← measures exact audio duration
-    ├── Image Generator     ← generates images using prompt MD + timing data
-    └── FFmpeg Assembler    ← combines images + audio into video
+    ├── Voiceover Processor ← espeak-ng → scene_NNN.mp3
+    ├── Audio Analyzer      ← ffprobe → timeline.json durations
+    ├── Transcriber         ← faster-whisper → timeline.json words[]
+    ├── Pillow Compositor   ← SVG assets → PNG frames
+    └── FFmpeg Assembler    ← frames + audio → draft.mp4
 ```
+
+### v2 path (Remotion — event-driven animation)
+
+```
+Claude.ai Web (browser)
+    │  MCP tools
+    ▼
+CLI App (console)
+    ├── Project Manager     ← creates/manages projects and channels
+    ├── Voiceover Processor ← espeak-ng → scene_NNN.mp3
+    ├── Audio Analyzer      ← ffprobe → timeline.json durations
+    ├── Transcriber         ← faster-whisper → timeline.json words[]
+    ├── Remotion Renderer   ← scene_layout.json (events) → scene_NNN.mp4
+    └── DaVinci Exporter    ← FCPXML → DaVinci Resolve for final edit
+```
+
+Schema version is detected automatically from `scene_layout.json`:
+- `scenes[].events` present → **v2** (Remotion)
+- `frames[].layers` present → **v1** (Pillow)
+
+Claude controls which path by the schema it submits to `pipeline_submit_scene_layouts`.
+
+---
+
+## Design Philosophy
+
+### No hardcoded tool sequence
+
+The CLI app has no internal workflow engine. It executes individual commands and returns structured responses. **Claude decides what to call next.**
+
+Claude makes this decision based on three sources of information:
+
+1. **Tool descriptions** — every MCP tool has a description that explains its preconditions and purpose.
+2. **`instructions` field** — every tool response includes an `instructions` field with explicit guidance: what was done, what state the workspace is in, and what to call next.
+3. **`state.json`** — current step and status, written by Claude after each completed step. On reconnect, Claude reads `state.json` to know where to resume.
+
+This means the pipeline can be entered at any point, not just from Step 0.
+
+### Three workflow entry points
+
+**Entry point A — Pre-production (no active project)**
+
+Claude uses Competitor Intelligence and Channel Config tools without any production workspace.
+This is research mode: analyzing competitors, building channel DNA, writing skills files.
+No `channel` or `scenario` context is required for CI/CH tools.
+
+**Entry point B — Full production (new scenario)**
+
+Claude starts from Step 0 (project resolution) and runs the full pipeline through to Step 6.
+`state.json` is written at each step. If the session ends, reconnecting Claude reads `state.json` and continues from the last completed step without repeating work.
+
+**Entry point C — Iteration (existing workspace)**
+
+Claude opens an existing workspace and iterates on specific scenes without re-running the full pipeline.
+Examples:
+- Re-render one scene after editing its events: `pipeline_update_scene_event` → `pipeline_render_scene`
+- Preview a specific moment: `pipeline_preview_scene_event`
+- Change voiceover for one scene: re-run voiceover for that scene, rebuild timeline, re-render that scene only
+
+The CLI app supports all three entry points equally. There is no mode switch — Claude simply calls the tools it needs.
 
 ---
 
@@ -99,10 +162,13 @@ projects/
 └── <channel_name>/              ← one directory per channel
     └── <scenario_name>/         ← one sub-project per scenario
         ├── audio/               ← voiceover, music, SFX
-        ├── images/              ← scene images
-        ├── prompts/             ← image generation prompts
-        ├── md/                  ← JSON data files (tts_input, timeline, image_prompts, voiceover_status)
-        ├── renders/             ← intermediate renders
+        ├── images/              ← scene images (v1 path)
+        ├── prompts/             ← image generation prompts (v1 legacy path)
+        ├── md/                  ← JSON data files (tts_input, timeline, scene_layout, lipsync)
+        ├── renders/
+        │   ├── scenes/          ← scene_NNN.mp4 (Remotion output for v2)
+        │   ├── frames/          ← frame PNGs (Pillow output for v1)
+        │   └── previews/        ← spot-check PNGs from pipeline_preview_scene_event
         ├── final/               ← finished videos
         ├── state.json           ← current pipeline step and status
         └── project_config.json  ← project settings agreed by Claude and user
@@ -249,6 +315,7 @@ After audio generation is complete, Claude calls `pipeline_build_timeline` to me
 **Process:**
 1. `pipeline_build_timeline` — measures every `audio/scene_NNN.mp3` with ffprobe, writes `md/timeline.json`.
 2. `pipeline_get_timeline` — returns the full timeline so Claude can plan the visual track.
+3. `pipeline_transcribe_scenes` *(optional but recommended)* — runs faster-whisper per scene, enriches `timeline.json` with word-level timings.
 
 ### 3.1 — Timeline Format
 
@@ -273,7 +340,7 @@ File written to `projects/<channel>/<scenario>/md/timeline.json`.
 ]
 ```
 
-`words` — word-level timings if Whisper is available; otherwise an empty array. Claude uses word-level pauses as cut triggers in `dynamic` frame mode.
+`words` — word-level timings from faster-whisper; empty array if transcription was skipped. Claude uses word-level pauses as cut triggers in `dynamic` frame mode and as event timing references in v2 animation design.
 
 Claude receives: cumulative start/end offsets, scene durations, and word timings for visual track planning.
 
@@ -283,7 +350,7 @@ Claude receives: cumulative start/end offsets, scene durations, and word timings
 
 ## Step 4 — Compositing and Frame Generation
 
-With exact timings in hand, Claude designs the visual track and generates rendered frames.
+With exact timings in hand, Claude designs the visual track and submits a scene layout.
 
 ### 4.1 — Asset Management
 
@@ -299,8 +366,9 @@ Assets carry semantic and emotion tags for search (`pipeline_search_assets` supp
 
 ### 4.2 — Scene Layout Design
 
-Claude calls `pipeline_submit_scene_layouts` with a `SceneLayout` JSON describing every frame:
+Claude calls `pipeline_submit_scene_layouts` with a layout JSON. Two schemas are accepted:
 
+**v1 — frames-based (Pillow compositor, slideshow):**
 ```json
 {
   "frames": [
@@ -327,17 +395,73 @@ Claude calls `pipeline_submit_scene_layouts` with a `SceneLayout` JSON describin
 }
 ```
 
-Layer types: `asset`, `character` (legacy), `character_composite` (BODY+FACE+EYES stacked), `asset_composite` (PARTs stacked), `generated`, `speech_bubble`, `text`.
+**v2 — events-based (Remotion, animation):**
+```json
+{
+  "_schema_version": "v2",
+  "scenes": [
+    {
+      "scene_id": 1,
+      "chapter": "Hook",
+      "audio_file": "/abs/path/audio/scene_001.mp3",
+      "duration": 8.4,
+      "fps": 30,
+      "canvas": {"width": 1920, "height": 1080},
+      "events": [
+        {"time": 0.0, "action": "show", "target": "bg", "component": "background",
+         "state": {"color": "#F5F5F5"}},
+        {"time": 0.5, "action": "show", "target": "worker1", "component": "stickman",
+         "state": {"color": "#FFD700", "emotion": "neutral", "pose": "standing"},
+         "position": {"x": 400, "y": 200}},
+        {"time": 2.1, "action": "trigger_preset", "target": "worker1", "preset": "shake"},
+        {"time": 2.1, "action": "change_state", "target": "worker1",
+         "state": {"emotion": "shocked"}},
+        {"time": 3.0, "action": "show_text", "target": "caption1",
+         "value": "€800/month rent increase", "style": "gut_punch",
+         "position": {"x": 700, "y": 500}},
+        {"time": 6.0, "action": "hide", "target": "caption1"}
+      ]
+    }
+  ]
+}
+```
+
+Schema version is auto-detected by the server: `events` key → v2, `layers` key → v1.
+
+Full v2 schema reference: `REMOTION_INTEGRATION.md`.
 
 ---
 
-### 4.3 — Frame Rendering
+### 4.3 — Rendering
 
-`pipeline_render_frames` compiles the layout into PNG frames in `renders/frames/`. SVG assets are rasterized via cairosvg (or Pillow fallback). Composite layers are composited by z_index with optional color substitution. COMP assets are cached automatically when `save_as_comp: true`.
+`pipeline_render_frames` routes automatically based on the detected schema:
 
-Usage counters are incremented on each render so overuse can be detected.
+**v1 path** — Pillow compositor:
+- Compiles layout into PNG frames in `renders/frames/`
+- SVG assets rasterized via cairosvg
+- Composite layers composited by z_index with optional color substitution
+- COMP assets cached automatically when `save_as_comp: true`
+- Usage counters incremented on each render
+- `pipeline_preview_frame` renders a single frame synchronously for fast layout verification
 
-`pipeline_preview_frame` renders a single frame synchronously for fast layout verification.
+**v2 path** — Remotion:
+- Each scene is rendered as a standalone MP4 via `ts-node pipeline/remotion/render.ts`
+- Output: `renders/scenes/scene_NNN.mp4`
+- Per-scene status written to `md/remotion_status.json`
+- Use `pipeline_render_scene` for a single scene or `pipeline_render_all_scenes` for the full run
+- Use `pipeline_get_remotion_status` to poll progress
+- Use `pipeline_preview_scene_event` for a PNG spot-check at a specific second
+
+**Editing a v2 scene without full re-render:**
+- `pipeline_update_scene_event` — modify one event field in-place
+- `pipeline_move_event` — shift an event's timing
+- `pipeline_list_scene_events` — inspect all events for a scene
+- After edits: call `pipeline_render_scene` for that scene only. Other scenes are unaffected.
+
+**Lip sync (v2 only):**
+- `pipeline_generate_lipsync` — runs rhubarb-lip-sync on scene audio, writes `md/lipsync_scene_NNN.json`
+- Output: phoneme-level mouth shape timings (8 shapes + rest)
+- Add `lipsync: true` to a stickman event to use mouth animation
 
 ---
 
@@ -360,16 +484,20 @@ Claude maintains structured data across all projects in `global_registry.json` (
 - `pipeline_create_experiment` / `pipeline_update_experiment` track A/B tests
 - `pipeline_get_analytics` / `pipeline_get_insights` / `pipeline_compare_videos` return aggregated data
 
-**Gate condition:** Step 5 does not start until all frames exist in `renders/frames/` and Claude sends a full-completion signal.
+**Gate condition (v1):** Step 5 does not start until all frames exist in `renders/frames/` and Claude sends a full-completion signal.
+
+**Gate condition (v2):** Step 5 is skipped. After all scenes are rendered by Remotion, proceed directly to Step 6.
 
 ---
 
-## Step 5 — Preliminary Assembly
+## Step 5 — Assembly
+
+### v1 path — FFmpeg preliminary assembly
 
 The CLI app assembles a preliminary synchronized video using FFmpeg.
 
 **Inputs:**
-- All images from `images/frame_{frame_id:04d}.png` (one per frame in `image_prompts.json`)
+- All images from `renders/frames/frame_{frame_id:04d}.png`
 - All audio files from `audio/scene_<NNN>.mp3`
 - Timing data from `md/timeline.json`
 
@@ -383,27 +511,40 @@ The CLI app assembles a preliminary synchronized video using FFmpeg.
 
 **Gate condition:** Step 6 does not start until the draft render file exists and FFmpeg exits with code 0.
 
+### v2 path — skip FFmpeg assembly
+
+Remotion already produced `renders/scenes/scene_NNN.mp4` for every scene.
+Do **not** call `pipeline_assemble_scenes` or `pipeline_concat_scenes`.
+Proceed directly to `pipeline_export_davinci`.
+
 ---
 
 ## Step 6 — Final Editing in DaVinci Resolve
 
-> **Status: planned — not implemented.** No code exists for this step. `pipeline_export_davinci` is not in the tool registry. This section describes the intended design.
+After Remotion renders all scenes (v2 path), Claude exports an FCPXML timeline for DaVinci Resolve.
 
-After the preliminary render, the project would be handed off to DaVinci Resolve via the Python Scripting API.
+**Tool:** `pipeline_export_davinci(channel, scenario, format="fcpxml")`
 
-**Planned DaVinci Resolve operations:**
-- Final editing
-- Transitions
-- Visual effects
-- Color grading
-- Motion effects
-- Subtitles
-- Sound design
-- Final export
+**Output:** `renders/<channel>_<scenario>_davinci.fcpxml`
 
-**Planned output:** finished video written to `projects/<channel>/<scenario>/final/<scenario_name>.mp4`.
+The FCPXML references the Remotion-rendered scene MP4s at `renders/scenes/scene_NNN.mp4` and carries:
+- Scene order and durations from `md/timeline.json`
+- Chapter names from the scenario as clip names
+- Correct frame rate (30fps) and resolution (1920×1080)
 
-**Gate condition (planned):** Pipeline complete when the final video file exists and DaVinci Resolve reports successful export.
+**In DaVinci Resolve:**
+1. File → Import → Timeline → select `.fcpxml`
+2. All scenes appear in timeline in correct order with chapter names
+3. Add transitions between scenes (Edit page → Effects → Transitions)
+4. Add subtitles if needed (Subtitles track → Auto Caption or manual)
+5. Color grade if needed (Color page)
+6. Deliver → YouTube 1080p preset
+
+Full workflow reference: `DAVINCI_WORKFLOW.md`.
+
+**Gate condition:** Pipeline complete when `pipeline_export_davinci` returns `ok: true` and the `.fcpxml` file exists on disk. DaVinci Resolve handles everything after this point.
+
+**Implementation:** `pipeline/src/davinci/exporter.py` — pure Python, zero external dependencies. Uses only `xml.etree.ElementTree` and `xml.dom.minidom` from the standard library.
 
 ---
 
@@ -436,9 +577,9 @@ These rules apply to every step in the pipeline.
 | 1 | Project/sub-project creation |
 | 2 | Scenario creation and voiceover |
 | 3 | Audio analysis and synchronization |
-| 4 | Image generation |
-| 5 | Preliminary FFmpeg assembly |
-| 6 | DaVinci Resolve final export |
+| 4 | Compositing / Remotion render |
+| 5 | FFmpeg assembly (v1 path only) |
+| 6 | DaVinci Resolve export |
 
 ---
 
@@ -448,7 +589,9 @@ Claude.ai web connects to the CLI app via **MCP tools** exposed by the CLI app.
 
 The CLI app runs a local MCP server that Claude.ai web can connect to.
 
-**MCP tools the CLI app exposes (83 total):**
+**Every tool response includes a top-level `instructions` field** with guidance for Claude on what to do next. Claude reads this field and decides the next call. The app never decides for Claude.
+
+**MCP tools the CLI app exposes (93 total):**
 
 | Tool | Step | Description |
 |---|---|---|
@@ -485,12 +628,21 @@ The CLI app runs a local MCP server that Claude.ai web can connect to.
 | `pipeline_generate_character` | 4 | Generate character PNG via image engine + SVG trace; background threading |
 | `pipeline_get_character_status` | 4 | Return last character generation status |
 | `pipeline_list_characters` | 4 | List all characters in global_assets/characters/main/ |
-| `pipeline_submit_scene_layouts` | 4 | Accept SceneLayout JSON and write `md/scene_layout.json` |
-| `pipeline_render_frames` | 4 | Render all layout frames to PNG; increments usage counters; background threading |
+| `pipeline_submit_scene_layouts` | 4 | Accept SceneLayout JSON (v1 frames or v2 events) and write `md/scene_layout.json` |
+| `pipeline_render_frames` | 4 | Route to Pillow (v1) or Remotion (v2) based on schema; background threading |
 | `pipeline_get_render_frames_status` | 4 | Return render progress from `md/render_status.json` |
 | `pipeline_list_frames` | 4 | List rendered frame files |
-| `pipeline_preview_frame` | 4 | Render a single frame synchronously for layout verification |
-| `pipeline_update_frame_layout` | 4 | Update layers in an existing frame without full resubmit |
+| `pipeline_preview_frame` | 4 | Render a single frame synchronously for layout verification (v1) |
+| `pipeline_update_frame_layout` | 4 | Update layers in an existing frame without full resubmit (v1) |
+| `pipeline_render_scene` | 4v2 | Render a single scene via Remotion; returns status and output path |
+| `pipeline_render_all_scenes` | 4v2 | Render all scenes via Remotion with concurrency control; background job |
+| `pipeline_get_remotion_status` | 4v2 | Return per-scene Remotion render progress and ETA |
+| `pipeline_stop_render` | 4v2 | Cancel a running Remotion render job |
+| `pipeline_update_scene_event` | 4v2 | Modify a single event field in scene_layout without full resubmit |
+| `pipeline_move_event` | 4v2 | Shift an event's timing within a scene |
+| `pipeline_preview_scene_event` | 4v2 | Render a PNG at a specific time in a scene for spot-check |
+| `pipeline_list_scene_events` | 4v2 | Inspect all events for a scene with their current values |
+| `pipeline_generate_lipsync` | 4v2 | Run rhubarb-lip-sync on scene audio; write `md/lipsync_scene_NNN.json` |
 | `pipeline_get_global_registry` | 4 | Return global_registry.json (all sheets) |
 | `pipeline_get_project_registry` | 4 | Return project_registry.json (all sheets) |
 | `pipeline_add_registry_row` | 4 | Add a row to a registry sheet |
@@ -513,6 +665,7 @@ The CLI app runs a local MCP server that Claude.ai web can connect to.
 | `pipeline_search_free_audio` | 4 | Search Freesound for music/SFX (returns import_ids for save step) |
 | `pipeline_save_free_audio` | 4 | Download and register a Freesound result into the asset index |
 | `pipeline_add_competitor_channel` | CI | Add a competitor channel record |
+| `pipeline_update_competitor_channel` | CI | Update competitor channel fields (dot notation) |
 | `pipeline_get_competitor_channel` | CI | Return a competitor channel record |
 | `pipeline_list_competitor_channels` | CI | List all competitor channels |
 | `pipeline_add_competitor_video` | CI | Add a competitor video; applies engagement formulas automatically |
@@ -520,7 +673,6 @@ The CLI app runs a local MCP server that Claude.ai web can connect to.
 | `pipeline_get_competitor_video` | CI | Return a competitor video record |
 | `pipeline_list_competitor_videos` | CI | List all videos for a competitor channel |
 | `pipeline_import_transcript` | CI | Store a transcript for a competitor video |
-| `pipeline_get_transcript` | CI | Return a competitor video transcript |
 | `pipeline_get_competitor_index` | CI | Return the global competitor index (hooks/thumbnails/pacing/patterns) |
 | `pipeline_query_competitor_data` | CI | Filter the global competitor index by field value |
 | `pipeline_save_channel_config` | CH | Save channel_config.json (channel DNA) |
@@ -531,16 +683,19 @@ The CLI app runs a local MCP server that Claude.ai web can connect to.
 | `pipeline_update_channel_skill` | CH | Write/update a channel skill file (SCENARIO_WRITER etc.) |
 | `pipeline_get_channel_skill` | CH | Return a channel skill file |
 | `pipeline_list_channel_skills` | CH | List all skill files for a channel |
-| `pipeline_assemble_scenes` | 5 | Build one MP4 clip per scene (frames + audio) into `renders/scenes/` |
-| `pipeline_concat_scenes` | 5 | Concatenate scene clips into `renders/<scenario>_draft.mp4` |
+| `pipeline_assemble_scenes` | 5 | Build one MP4 clip per scene (frames + audio) into `renders/scenes/` — v1 path only |
+| `pipeline_concat_scenes` | 5 | Concatenate scene clips into `renders/<scenario>_draft.mp4` — v1 path only |
 | `pipeline_get_render_status` | 5 | Return assembly and concat status from `md/render_status.json` |
 | `pipeline_get_output_file` | 5 | Return path, size, and duration of the draft render file |
+| `pipeline_export_davinci` | 6 | Generate FCPXML 1.10 timeline from Remotion scenes; writes `renders/<name>_davinci.fcpxml` |
 
-**Step column key:** CI = Competitor Intelligence (pre-production), CH = Channel Config (pre-production), 4 = Frame generation / registry / analytics.
-
-Every tool response includes a top-level `instructions` field with guidance for Claude on what to do next.
-
-Planned future tools: `pipeline_export_davinci`. Add to this table only when implemented and verified through MCP `tools/list`.
+**Step column key:**
+- CI = Competitor Intelligence (pre-production, entry point A)
+- CH = Channel Config (pre-production, entry point A)
+- 4 = Frame generation / registry / analytics (both v1 and v2)
+- 4v2 = Remotion animation path only (entry points B and C)
+- 5 = FFmpeg assembly (v1 path only)
+- 6 = DaVinci export (v2 path only)
 
 **The CLI app never advances the pipeline on its own.** Only Claude calls `pipeline_set_state` to advance steps. The CLI app executes, Claude decides.
 
@@ -552,14 +707,4 @@ Planned future tools: `pipeline_export_davinci`. Add to this table only when imp
 - The CLI app does not generate prompts — Claude does.
 - The CLI app does not know about channel strategy or scenario content — Claude does.
 - LoRA model training (separate tool: `lora-trainer`) is a prerequisite, not part of this pipeline.
-
----
-
-## Open Questions (To Be Resolved)
-
-- [ ] How does Claude.ai web discover the local MCP server address? (localhost port? config file?)
-- [ ] What is the channel configuration format? (dimensions, style, language, voice profile)
-- [ ] Where is the TTS/image engine config stored? (project-level YAML, global config, env vars?)
-- [ ] How does DaVinci Resolve receive the project — via a shared folder, a Resolve project file, or a Python script that builds the timeline from scratch?
-- [ ] What is the subtitle source for DaVinci Resolve — generated from `md/timing_report.json` or a separate file?
-- [ ] How are batches of fewer than 50 scenes handled at the end of a scenario?
+- DaVinci Resolve color grading, transitions, and final delivery — handled by the user in DaVinci after FCPXML import.
