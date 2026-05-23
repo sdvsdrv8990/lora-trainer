@@ -63,10 +63,22 @@ global_assets/sounds/
 global_assets/characters/**/*.mp3
 
 # Non-project planning/audit docs — keep locally, do not publish to GitHub
+# Rule: only source code, configs, and docs/pipeline/ architecture files belong on GitHub.
+# Development plans, integration analyses, workflow guides, and audit reports stay local.
 docs/pipeline/integration/
 pipeline/audit/
 _AUDIT_TEMP.md
 .planning/
+
+# Root-level development/planning docs
+REMOTION_INTEGRATION.md
+DAVINCI_WORKFLOW.md
+KOKORO_INTEGRATION.md
+PRODUCTION_PIPELINE.md
+
+# Pipeline planning and strategy guides
+pipeline/CHANNEL_SYSTEM.md
+pipeline/CONTENT_INTELLIGENCE.md
 
 # OS
 .DS_Store
