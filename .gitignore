@@ -72,9 +72,11 @@ _AUDIT_TEMP.md
 
 # Root-level development/planning docs
 REMOTION_INTEGRATION.md
-DAVINCI_WORKFLOW.md
 KOKORO_INTEGRATION.md
 PRODUCTION_PIPELINE.md
+
+# Tests — local only
+tests/
 
 # Pipeline planning and strategy guides
 pipeline/CHANNEL_SYSTEM.md
