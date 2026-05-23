@@ -32,8 +32,11 @@ This repository contains two related surfaces:
 **At the start of every video pipeline session, load:**
 
 1. `/pipe-dev-guide` — always first
-2. `/pipe-planning-gate` — before any code change
-3. One task-specific pipeline skill from the table below
+2. `/pipe-policy-core` — **mandatory second** (constitution: invariants, safety rules, skill tiers)
+3. `/pipe-planning-gate` — before any code change
+4. One task-specific pipeline skill from the table below
+
+**Pipeline audit files live in `pipeline/audit/` — read them before any pipeline code change.**
 
 ### Task → Skill mapping
 
