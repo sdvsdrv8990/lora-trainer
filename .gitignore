@@ -62,7 +62,9 @@ competitor_intelligence/channels/*/videos/
 global_assets/sounds/
 global_assets/characters/**/*.mp3
 
-# Audit/planning temp files
+# Non-project planning/audit docs — keep locally, do not publish to GitHub
+docs/pipeline/integration/
+pipeline/audit/
 _AUDIT_TEMP.md
 .planning/
 
