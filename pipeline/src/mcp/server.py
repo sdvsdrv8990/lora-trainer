@@ -452,13 +452,28 @@ def pipeline_transcribe_scenes(
     scenario: ScenarioArg,
     model: WhisperModelArg = "base",
     language: LanguageArg = "ru",
+    vad: Annotated[str, "Use Silero VAD for silence detection ('true'/'false'). Better for noisy audio."] = "false",
+    suppress_silence: Annotated[str, "Clip word timestamps to non-silent regions ('true'/'false')."] = "true",
 ) -> dict:
-    """Run faster-whisper on all scene audio files and enrich md/timeline.json with word-level timings."""
+    """Run stable-whisper (faster-whisper backend) on all scene audio files.
+
+    Enriches md/timeline.json with:
+    - words[]: flat list with {word, start, end, confidence}
+    - segments[]: natural linguistic groups with {start, end, text, words[]}
+
+    Also saves md/stable_result_scene_NNN.json per scene for subtitle export and re-alignment.
+    """
     try:
         ws = _workspace(channel, scenario)
         if not ws.exists():
             return {"ok": False, "error": f"Workspace not found: {channel}/{scenario}.", "step": 3}
-        result = audio_transcriber.transcribe_scenes(ws, model_name=model, language=language)
+        result = audio_transcriber.transcribe_scenes(
+            ws,
+            model_name=model,
+            language=language,
+            vad=vad.lower() == "true",
+            suppress_silence=suppress_silence.lower() == "true",
+        )
         return {
             "ok": True,
             "data": result,
@@ -468,6 +483,83 @@ def pipeline_transcribe_scenes(
         return {"ok": False, "error": str(e), "step": 3}
     except Exception as e:
         return {"ok": False, "error": str(e), "step": 3}
+
+
+@mcp.tool()
+def pipeline_export_subtitles(
+    channel: ChannelArg,
+    scenario: ScenarioArg,
+    format: Annotated[str, "Subtitle format: 'srt', 'vtt', 'ass', 'tsv', 'txt'."] = "srt",
+    scene_ids: Annotated[str, "Comma-separated scene IDs to export, or 'all' for all scenes."] = "all",
+    word_level: Annotated[str, "Add word-by-word highlighting in ASS format ('true'/'false')."] = "false",
+) -> dict:
+    """Export subtitles from stable-ts transcription results.
+
+    Reads md/stable_result_scene_NNN.json (written by pipeline_transcribe_scenes).
+    Exports to md/subtitles/scene_NNN.<format>.
+
+    Formats: srt (DaVinci/YouTube), vtt (web), ass (karaoke), tsv, txt.
+    Run pipeline_transcribe_scenes first if files are missing.
+    """
+    from src.audio import subtitle_exporter
+    try:
+        ws = _workspace(channel, scenario)
+        if not ws.exists():
+            return {"ok": False, "error": f"Workspace not found: {channel}/{scenario}."}
+        ids = None if scene_ids.strip().lower() == "all" else [int(x) for x in scene_ids.split(",")]
+        exported = subtitle_exporter.export_subtitles(
+            ws, ids, fmt=format, word_level=word_level.lower() == "true"
+        )
+        return {
+            "ok": True,
+            "data": {
+                "exported": exported,
+                "count": len(exported),
+                "format": format,
+                "directory": str(ws / "md" / "subtitles"),
+            },
+            "instructions": get_instructions("pipeline_export_subtitles", {"count": len(exported), "format": format}),
+        }
+    except FileNotFoundError as e:
+        return {"ok": False, "error": str(e)}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@mcp.tool()
+def pipeline_align_scene(
+    channel: ChannelArg,
+    scenario: ScenarioArg,
+    scene_id: Annotated[int, "Scene ID to re-align."],
+    corrected_text: Annotated[str, "Corrected transcript text for this scene. Must match the spoken audio."],
+    model: WhisperModelArg = "base",
+    language: LanguageArg = "ru",
+) -> dict:
+    """Re-align a corrected transcript to scene audio without re-transcribing.
+
+    Use when you know the correct text but timestamps are wrong or drifted.
+    Much faster than pipeline_transcribe_scenes (no speech recognition — only alignment).
+    Updates timeline.json words[] and segments[] for this scene only.
+    Also overwrites md/stable_result_scene_NNN.json for subtitle export.
+    """
+    from src.audio import subtitle_exporter
+    try:
+        ws = _workspace(channel, scenario)
+        if not ws.exists():
+            return {"ok": False, "error": f"Workspace not found: {channel}/{scenario}."}
+        result = subtitle_exporter.align_scene(
+            ws, scene_id=scene_id, corrected_text=corrected_text,
+            model_name=model, language=language,
+        )
+        return {
+            "ok": True,
+            "data": result,
+            "instructions": get_instructions("pipeline_align_scene", result),
+        }
+    except (FileNotFoundError, ValueError) as e:
+        return {"ok": False, "error": str(e)}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 
 # ─── Step 4 (legacy): image prompts ──────────────────────────────────────────

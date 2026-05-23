@@ -74,11 +74,40 @@ _TEMPLATES: dict[str, str] = {
     ),
 
     "pipeline_transcribe_scenes": (
-        "Transcription complete. Scenes: {scene_count}. Words with timings: {total_words}.\n"
-        "Next step — pipeline_get_timeline to analyze timings.\n"
-        "Look for pauses between words (> 0.5s) and semantic text blocks —\n"
-        "these are cut-points. Form the storyboard and agree with the user\n"
-        "before pipeline_submit_scene_layouts."
+        "Transcription complete (stable-whisper). Scenes: {scene_count}. Words: {total_words}.\n"
+        "timeline.json now contains per-scene:\n"
+        "  words[]: flat list with {word, start, end, confidence}\n"
+        "  segments[]: natural linguistic groups with {start, end, text, words[]}\n"
+        "Saved md/stable_result_scene_NNN.json for subtitle export and re-alignment.\n\n"
+        "Next steps:\n"
+        "  pipeline_get_timeline — analyze timings, find pauses > 0.5s as cut-points\n"
+        "  pipeline_export_subtitles — export SRT/VTT/ASS for DaVinci or web (run any time after this)\n"
+        "  pipeline_align_scene(scene_id, corrected_text) — fix timestamps for a specific scene\n"
+        "    without re-transcribing (much faster)\n\n"
+        "Use segments[] (not words[]) for v2 animation event timing — segments are\n"
+        "natural speech units that map cleanly to caption events."
+    ),
+
+    "pipeline_export_subtitles": (
+        "Exported {count} subtitle file(s) in {format} format.\n"
+        "Files saved to md/subtitles/scene_NNN.{format}.\n\n"
+        "Usage:\n"
+        "  SRT — import into DaVinci Resolve as subtitle track, or upload to YouTube\n"
+        "  VTT — embed in web player\n"
+        "  ASS — karaoke highlighting; set word_level='true' for word-by-word highlight\n"
+        "  TXT — plain transcript for review or prompt generation\n\n"
+        "To re-export with different settings, just call pipeline_export_subtitles again —\n"
+        "it reads from the saved stable-ts JSON, no re-transcription needed."
+    ),
+
+    "pipeline_align_scene": (
+        "Re-alignment complete. Scene {scene_id}. Words re-timed: {word_count}.\n"
+        "Updated: timeline.json words[] and segments[] for this scene.\n"
+        "Updated: md/stable_result_scene_{scene_id:03d}.json\n\n"
+        "Next:\n"
+        "  pipeline_export_subtitles(scene_ids='{scene_id}') — export subtitles with corrected text\n"
+        "  pipeline_render_scene(scene_id={scene_id}) — re-render animation with corrected timings\n"
+        "Other scenes are not affected."
     ),
 
     # ── Step 4: scene layout and compositing ─────────────────────────────────
