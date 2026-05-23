@@ -31,6 +31,41 @@ Connect Claude Code to `http://localhost:8765/mcp`. For Claude.ai web, see [Conn
 
 ---
 
+## Project Structure
+
+```
+pipeline/
+├── src/
+│   ├── mcp/server.py           97 MCP tool definitions
+│   ├── audio/
+│   │   ├── tts/                espeak adapter + tone fallback
+│   │   ├── transcriber.py      faster-whisper wrapper
+│   │   └── lipsync.py          rhubarb wrapper
+│   ├── images/
+│   │   ├── compositor.py       Pillow compositor (v1)
+│   │   ├── adapters/           stub + diffusers adapters
+│   │   └── layout_store.py     v1/v2 schema routing
+│   ├── remotion/
+│   │   ├── renderer.py         Python → Node.js bridge
+│   │   └── render_jobs.py      async job management
+│   ├── davinci/
+│   │   └── exporter.py         FCPXML 1.10, stdlib only
+│   └── registry.py             global + project registries
+├── remotion/
+│   └── src/
+│       ├── Scene.tsx           event-driven renderer
+│       ├── components/         Background, Stickman, FloatingText, AnimatedNumber, SpeechBubble
+│       └── presets/            dramatic_popup, shake, slide_in
+├── channels/                   channel configs + skill files
+├── global_assets/              SVG library — characters, objects, sounds
+├── global_registry.json        cross-project asset scoring + analytics
+└── config/
+    ├── engines.yaml            active model profiles
+    └── image_engines/          sd15, sdxl, stub profiles
+```
+
+---
+
 ## Documentation
 
 | Doc | What it covers |
