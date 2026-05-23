@@ -62,10 +62,30 @@ competitor_intelligence/channels/*/videos/
 global_assets/sounds/
 global_assets/characters/**/*.mp3
 
-# Non-project planning/audit docs — keep locally, do not publish to GitHub
-# Rule: only source code, configs, and docs/pipeline/ architecture files belong on GitHub.
-# Development plans, integration analyses, workflow guides, and audit reports stay local.
+# ─────────────────────────────────────────────────────────────────
+# DOCUMENTATION POLICY
+#
+# Two types of docs exist in this repo:
+#
+#   TYPE A — PROJECT DOCS (on GitHub, linked from README)
+#     docs/pipeline/reference/       ← file structures, schemas, entry-point guides
+#     docs/pipeline/ARCHITECTURE.md  ← layer map, module map
+#     docs/pipeline/CONNECT.md       ← connector setup
+#     docs/pipeline/*.md             ← stable architectural references
+#
+#   TYPE B — DEVELOPMENT DOCS (local only, gitignored)
+#     docs/pipeline/development/     ← integration plans, audit reports, planning notes
+#     docs/pipeline/integration/     ← legacy name, same rule
+#     docs/project/                  ← lora-trainer planning notes
+#
+# Rule: if a file is a plan, analysis, audit, or working note
+#       → it belongs in TYPE B → gitignored → stays on disk only.
+# ─────────────────────────────────────────────────────────────────
+
+# Development docs — local only
 docs/pipeline/integration/
+docs/pipeline/development/
+docs/project/
 pipeline/audit/
 _AUDIT_TEMP.md
 .planning/
