@@ -175,3 +175,39 @@ For any code change provide at least one of:
 - dry-run MCP tool call log
 - official MCP Python SDK `initialize -> tools/list` output for MCP protocol changes
 - explicit reason why runtime verification was not possible
+
+## Two-Phase Work Protocol
+
+This project is developed from a **cloud Claude Code session** (no local runtime) and
+verified on the **user's local PC** where the pipeline server actually runs.
+
+### Phase 1 — Cloud Session (write code, commit, push)
+
+Safe to do here:
+- Read, edit, create source files
+- Static validation: `python3 -m py_compile`, `bash -n`
+- Count tools with `grep -c "@mcp.tool()"` 
+- `git add`, `git commit`, `git push` (using PAT remote URL)
+
+NOT possible here:
+- `python main.py start` — heavy runtime deps not installed
+- MCP SDK `tools/list` verification — requires running server
+- Claude.ai connector reconnect — requires browser UI
+
+### Phase 2 — Local PC (run, verify, reconnect)
+
+After each significant push:
+1. `git pull origin <branch>`
+2. `bash pipeline/start.sh`
+3. Run MCP SDK snippet (expected count: **95**) — see `pipe-planning-gate` for the command
+4. If count matches: remove and re-add Claude.ai custom integration
+5. Test changed tools via Claude.ai web
+
+### Git Push in Cloud Sessions
+
+Cloud environment blocks git push over standard HTTPS. Use PAT in remote URL:
+```bash
+git remote set-url origin https://TOKEN@github.com/sdvsdrv8990/lora-trainer.git
+git push -u origin <branch>
+git remote set-url origin https://github.com/sdvsdrv8990/lora-trainer.git
+```
