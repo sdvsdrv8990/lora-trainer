@@ -105,7 +105,7 @@ Debug in this order:
 3. If SDK sees tools but Claude.ai does not, simplify tool schemas and re-add the connector.
 4. Do not debug this from a bare `GET /mcp`.
 
-Current expected tool count: `12`.
+Current expected tool count: `95`.
 
 ## Claude.ai-Friendly Schemas
 

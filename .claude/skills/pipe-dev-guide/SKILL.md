@@ -27,7 +27,7 @@ It IS:
 ## Current Working Surface
 
 The currently working implementation is the MCP bridge in `pipeline/`.
-It exposes **83 verified tools**. Verified count via MCP SDK `tools/list`: **83**.
+It exposes **95 verified tools**. Verified count via MCP SDK `tools/list`: **95**.
 
 **Project / workspace tools (8):**
 `pipeline_check_project`, `pipeline_create_project`, `pipeline_delete_project`,
@@ -39,8 +39,9 @@ It exposes **83 verified tools**. Verified count via MCP SDK `tools/list`: **83*
 **Scenario / voiceover tools (4):**
 `pipeline_submit_scenario`, `pipeline_start_voiceover`, `pipeline_get_voiceover_status`, `pipeline_stop_voiceover`
 
-**Timeline / transcription tools (3):**
-`pipeline_build_timeline`, `pipeline_get_timeline`, `pipeline_transcribe_scenes`
+**Timeline / transcription / subtitle tools (5):**
+`pipeline_build_timeline`, `pipeline_get_timeline`, `pipeline_transcribe_scenes`,
+`pipeline_export_subtitles`, `pipeline_align_scene`
 
 **Legacy prompt/image path (5):**
 `pipeline_submit_prompts`, `pipeline_get_prompts`, `pipeline_generate_images`, `pipeline_get_generation_status`, `pipeline_list_images`
@@ -52,7 +53,7 @@ It exposes **83 verified tools**. Verified count via MCP SDK `tools/list`: **83*
 **Character tools (3):**
 `pipeline_generate_character`, `pipeline_get_character_status`, `pipeline_list_characters`
 
-**Scene layout / compositing tools (5):**
+**Scene layout / compositing tools (6):**
 `pipeline_submit_scene_layouts`, `pipeline_render_frames`, `pipeline_get_render_frames_status`,
 `pipeline_list_frames`, `pipeline_preview_frame`, `pipeline_update_frame_layout`
 
@@ -70,9 +71,9 @@ It exposes **83 verified tools**. Verified count via MCP SDK `tools/list`: **83*
 `pipeline_search_free_audio`, `pipeline_save_free_audio`
 
 **Competitor intelligence tools (11):**
-`pipeline_add_competitor_channel`, `pipeline_get_competitor_channel`, `pipeline_list_competitor_channels`,
-`pipeline_add_competitor_video`, `pipeline_update_competitor_video`, `pipeline_get_competitor_video`,
-`pipeline_list_competitor_videos`, `pipeline_import_transcript`, `pipeline_get_transcript`,
+`pipeline_add_competitor_channel`, `pipeline_update_competitor_channel`, `pipeline_get_competitor_channel`,
+`pipeline_list_competitor_channels`, `pipeline_add_competitor_video`, `pipeline_update_competitor_video`,
+`pipeline_get_competitor_video`, `pipeline_list_competitor_videos`, `pipeline_import_transcript`,
 `pipeline_get_competitor_index`, `pipeline_query_competitor_data`
 
 **Channel config + skills tools (8):**
@@ -83,6 +84,14 @@ It exposes **83 verified tools**. Verified count via MCP SDK `tools/list`: **83*
 **FFmpeg assembly tools (4):**
 `pipeline_assemble_scenes`, `pipeline_concat_scenes`, `pipeline_get_render_status`, `pipeline_get_output_file`
 
+**Remotion / DaVinci v2 path tools (9):**
+`pipeline_render_scene`, `pipeline_render_all_scenes`, `pipeline_get_remotion_status`, `pipeline_stop_render`,
+`pipeline_update_scene_event`, `pipeline_move_event`, `pipeline_preview_scene_event`,
+`pipeline_list_scene_events`, `pipeline_export_davinci`
+
+**Lipsync tools (1):**
+`pipeline_generate_lipsync`
+
 Do not assume planned tools from `PRODUCTION_PIPELINE.md` already exist. When adding a
 future pipeline step, update the skill docs and verification evidence in the same change.
 
@@ -91,13 +100,14 @@ future pipeline step, update the skill docs and verification evidence in the sam
 | Layer | Module | Responsibility |
 |---|---|---|
 | 0 | `src/entities/` | Pydantic models: project, scenario, state, config, timeline, prompts, layout |
-| 1 | `src/mcp/server.py` | MCP tool server — exposes 83 `pipeline_*` tools |
+| 1 | `src/mcp/server.py` | MCP tool server — exposes 95 `pipeline_*` tools |
 | 2 | `src/project/manager.py` + `state.py` + `config.py` | Workspace, state.json, project_config.json |
 | 3 | `src/scenario/builder.py` | Validates structured tts_input → `md/tts_input.json` |
 | 4 | `src/tts/` | Abstract engine + espeak adapter |
 | 5 | `src/audio/analyzer.py` | ffprobe → `md/timeline.json` (durations) |
-| 5.5 | `src/audio/transcriber.py` | faster-whisper → enriches `timeline.json` words[] |
-| 5.6 | `src/audio/audio_import.py` | Freesound search + download; `_TEMP_STORE` for two-step import |
+| 5.5 | `src/audio/transcriber.py` | stable-whisper (faster-whisper backend) → enriches `timeline.json` words[] + segments[]; saves `md/stable_result_scene_NNN.json` |
+| 5.6 | `src/audio/subtitle_exporter.py` | Loads stable-ts JSON → SRT/VTT/ASS/TSV/TXT without re-transcribing; `align_scene()` re-aligns corrected text |
+| 5.7 | `src/audio/audio_import.py` | Freesound search + download; `_TEMP_STORE` for two-step import |
 | 6 | `src/images/prompts.py` | Saves/loads `md/image_prompts.json` |
 | 6.1 | `src/images/engine.py` + `adapters/` | Abstract ImageEngine + stub/diffusers adapters |
 | 6.2 | `src/images/batch.py` | Generation loop, `md/generation_status.json` |
@@ -122,7 +132,8 @@ future pipeline step, update the skill docs and verification evidence in the sam
 - `project/state.py` is the only place that reads or writes `state.json`.
 - `project/config.py` is the only place that reads or writes `project_config.json`.
 - `audio/analyzer.py` reads audio files and writes `md/timeline.json` — never derives timings from tts_input.
-- `audio/transcriber.py` enriches `timeline.json` words[] — reads and writes the same file, never changes durations.
+- `audio/transcriber.py` enriches `timeline.json` words[] + segments[] — reads and writes the same file, never changes durations; always saves `md/stable_result_scene_NNN.json` alongside.
+- `audio/subtitle_exporter.py` reads `md/stable_result_scene_NNN.json` — never re-transcribes; writes to `md/subtitles/`.
 - `images/batch.py` writes `images/frame_{frame_id:04d}.png` — naming is by frame_id, not scene_id.
 - `assembly/ffmpeg.py` reads `md/timeline.json` and `md/image_prompts.json` — never re-derives timings from audio.
 

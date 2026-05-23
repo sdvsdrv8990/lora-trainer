@@ -69,4 +69,4 @@ cd pipeline
 venv/bin/python -c "exec('import anyio\nfrom mcp import ClientSession\nfrom mcp.client.streamable_http import streamablehttp_client\nasync def main():\n    async with streamablehttp_client(\"http://127.0.0.1:8765/mcp\", headers={\"Host\": \"localhost:8765\"}) as (read, write, _):\n        async with ClientSession(read, write) as session:\n            await session.initialize()\n            result = await session.list_tools()\n            print(\"count\", len(result.tools))\n            for tool in result.tools:\n                print(tool.name)\nanyio.run(main)')"
 ```
 
-Expected current count: `26`.
+Expected current count: `95`.
